@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.db.models import Count, Sum
@@ -47,6 +48,18 @@ def obtener_nombre_mes(mes):
     return MESES[mes - 1]
 
 
+def calcular_periodo_adyacente(mes, anio, delta):
+    mes_nuevo = mes + delta
+    anio_nuevo = anio
+    if mes_nuevo < 1:
+        mes_nuevo = 12
+        anio_nuevo -= 1
+    elif mes_nuevo > 12:
+        mes_nuevo = 1
+        anio_nuevo += 1
+    return mes_nuevo, anio_nuevo
+
+
 def sumar_montos(queryset):
     return queryset.aggregate(total=Sum("monto"))["total"] or CERO
 
@@ -78,6 +91,115 @@ def obtener_categorias(usuario):
     return Categoria.objects.filter(usuario=usuario).order_by("nombre")
 
 
+def detectar_anomalia_gasto(usuario, gasto):
+    if not gasto.categoria:
+        return None
+
+    hoy = timezone.localdate()
+    inicio_mes_actual = date(hoy.year, hoy.month, 1)
+    mes_inicio = hoy.month - 3
+    anio_inicio = hoy.year
+    if mes_inicio < 1:
+        mes_inicio += 12
+        anio_inicio -= 1
+    inicio_historico = date(anio_inicio, mes_inicio, 1)
+
+    historicos = Gasto.objects.filter(
+        usuario=usuario,
+        categoria=gasto.categoria,
+        fecha__gte=inicio_historico,
+        fecha__lt=inicio_mes_actual,
+    )
+    conteo = historicos.count()
+    if conteo < 3:
+        return None
+
+    total_hist = sumar_montos(historicos)
+    promedio_tx = total_hist / conteo
+    if promedio_tx <= CERO:
+        return None
+
+    if gasto.monto >= promedio_tx * Decimal("2.5"):
+        return {
+            "nivel": "warning",
+            "mensaje": (
+                f'Gasto inusual en "{gasto.categoria.nombre}": '
+                f'${convertir_a_float(gasto.monto):.2f} es '
+                f'{float(gasto.monto / promedio_tx):.1f}x el promedio histórico '
+                f'(${convertir_a_float(promedio_tx):.2f} por transacción).'
+            ),
+        }
+
+    promedio_mensual = total_hist / Decimal("3")
+    total_mes = sumar_montos(
+        Gasto.objects.filter(
+            usuario=usuario,
+            categoria=gasto.categoria,
+            fecha__year=hoy.year,
+            fecha__month=hoy.month,
+        )
+    )
+    if promedio_mensual > CERO and total_mes >= promedio_mensual * Decimal("2"):
+        return {
+            "nivel": "warning",
+            "mensaje": (
+                f'Gasto mensual elevado en "{gasto.categoria.nombre}": '
+                f'llevas ${convertir_a_float(total_mes):.2f} este mes, '
+                f'el doble del promedio histórico (${convertir_a_float(promedio_mensual):.2f}/mes).'
+            ),
+        }
+
+    return None
+
+
+def obtener_alertas_anomalias_mes(usuario):
+    hoy = timezone.localdate()
+    inicio_mes_actual = date(hoy.year, hoy.month, 1)
+    mes_inicio = hoy.month - 3
+    anio_inicio = hoy.year
+    if mes_inicio < 1:
+        mes_inicio += 12
+        anio_inicio -= 1
+    inicio_historico = date(anio_inicio, mes_inicio, 1)
+
+    historico_por_cat = (
+        Gasto.objects.filter(
+            usuario=usuario,
+            fecha__gte=inicio_historico,
+            fecha__lt=inicio_mes_actual,
+        )
+        .values("categoria__id", "categoria__nombre")
+        .annotate(total_hist=Sum("monto"), cantidad=Count("id"))
+    )
+
+    alertas = []
+    for fila in historico_por_cat:
+        if (fila["cantidad"] or 0) < 3:
+            continue
+        promedio_mensual = Decimal(fila["total_hist"] or 0) / Decimal("3")
+        if promedio_mensual <= CERO:
+            continue
+
+        total_mes = sumar_montos(
+            Gasto.objects.filter(
+                usuario=usuario,
+                categoria_id=fila["categoria__id"],
+                fecha__year=hoy.year,
+                fecha__month=hoy.month,
+            )
+        )
+
+        if total_mes >= promedio_mensual * Decimal("2"):
+            alertas.append({
+                "categoria_nombre": fila["categoria__nombre"] or "Sin categoría",
+                "total_mes": redondear_monto(total_mes),
+                "promedio_mensual": redondear_monto(promedio_mensual),
+                "ratio": round(float(total_mes / promedio_mensual), 1),
+            })
+
+    return alertas
+
+
 def obtener_resumen_inicio(usuario):
     total_ingresos = sumar_montos(Ingreso.objects.filter(usuario=usuario))
     total_gastos = sumar_montos(Gasto.objects.filter(usuario=usuario))
@@ -85,6 +207,7 @@ def obtener_resumen_inicio(usuario):
         "total_ingresos": total_ingresos,
         "total_gastos": total_gastos,
         "balance": total_ingresos - total_gastos,
+        "alertas_anomalias": obtener_alertas_anomalias_mes(usuario),
     }
 
 
@@ -155,7 +278,15 @@ def obtener_presupuestos_restantes(usuario, mes=None, anio=None):
             }
         )
 
-    return {"presupuestos": resumen, "mes": mes, "anio": anio}
+    mes_ant, anio_ant = calcular_periodo_adyacente(mes, anio, -1)
+    mes_sig, anio_sig = calcular_periodo_adyacente(mes, anio, +1)
+    return {
+        "presupuestos": resumen,
+        "mes": mes, "anio": anio,
+        "nombre_mes": obtener_nombre_mes(mes),
+        "mes_ant": mes_ant, "anio_ant": anio_ant,
+        "mes_sig": mes_sig, "anio_sig": anio_sig,
+    }
 
 
 def evaluar_alerta_presupuesto(usuario, categoria):
@@ -202,6 +333,29 @@ def evaluar_alerta_presupuesto(usuario, categoria):
             ),
         }
     return None
+
+
+def copiar_presupuestos_mes_anterior(usuario, mes, anio):
+    mes_ant, anio_ant = calcular_periodo_adyacente(mes, anio, -1)
+    presupuestos_origen = Presupuesto.objects.filter(mes=mes_ant, anio=anio_ant, usuario=usuario)
+    ya_presentes = set(
+        Presupuesto.objects.filter(mes=mes, anio=anio, usuario=usuario)
+        .values_list("categoria_id", flat=True)
+    )
+    nuevos = [
+        Presupuesto(
+            categoria=p.categoria,
+            monto_limite=p.monto_limite,
+            mes=mes,
+            anio=anio,
+            usuario=usuario,
+        )
+        for p in presupuestos_origen
+        if p.categoria_id not in ya_presentes
+    ]
+    if nuevos:
+        Presupuesto.objects.bulk_create(nuevos)
+    return len(nuevos)
 
 
 def obtener_historial_transacciones(usuario, filtros=None):

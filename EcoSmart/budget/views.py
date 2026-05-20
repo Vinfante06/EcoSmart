@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from . import servicios
 from .formularios import (
@@ -68,10 +69,14 @@ def home(request):
 
 @login_required
 def remaining_budget(request):
+    mes, anio = servicios.normalizar_periodo(
+        request.GET.get("mes"),
+        request.GET.get("anio"),
+    )
     return render(
         request,
         "budget/remaining_budget.html",
-        servicios.obtener_presupuestos_restantes(request.user),
+        servicios.obtener_presupuestos_restantes(request.user, mes, anio),
     )
 
 
@@ -169,10 +174,13 @@ def expense_record(request):
         formulario = GastoForm(request.POST, usuario=request.user)
         if formulario.is_valid():
             gasto = formulario.save()
-            alerta = servicios.evaluar_alerta_presupuesto(request.user, gasto.categoria)
-            if alerta:
-                getattr(messages, alerta["nivel"])(request, alerta["mensaje"])
-            else:
+            alerta_presupuesto = servicios.evaluar_alerta_presupuesto(request.user, gasto.categoria)
+            alerta_anomalia = servicios.detectar_anomalia_gasto(request.user, gasto)
+            if alerta_presupuesto:
+                getattr(messages, alerta_presupuesto["nivel"])(request, alerta_presupuesto["mensaje"])
+            if alerta_anomalia:
+                getattr(messages, alerta_anomalia["nivel"])(request, alerta_anomalia["mensaje"])
+            if not alerta_presupuesto and not alerta_anomalia:
                 messages.success(request, "Gasto registrado correctamente.")
             return redirect("expense_record")
         _avisar_errores_formulario(request, formulario)
@@ -263,24 +271,60 @@ def savings_goal(request):
 
 @login_required
 def budget_create(request):
+    mes, anio = servicios.normalizar_periodo(
+        request.GET.get("mes"),
+        request.GET.get("anio"),
+    )
+
     if request.method == "POST":
         formulario = PresupuestoForm(request.POST, usuario=request.user)
         if formulario.is_valid():
             formulario.save()
             messages.success(request, "Presupuesto creado correctamente.")
-            return redirect("budget_create")
+            m = formulario.cleaned_data["mes"]
+            a = formulario.cleaned_data["anio"]
+            return redirect(f"{reverse('budget_create')}?mes={m}&anio={a}")
         _avisar_errores_formulario(request, formulario)
+    else:
+        formulario = PresupuestoForm(
+            usuario=request.user,
+            initial={"mes": mes, "anio": anio},
+        )
+
+    mes_ant, anio_ant = servicios.calcular_periodo_adyacente(mes, anio, -1)
+    mes_sig, anio_sig = servicios.calcular_periodo_adyacente(mes, anio, +1)
 
     return render(
         request,
         "budget/budget_create.html",
         {
+            "form": formulario,
             "categorias": servicios.obtener_categorias(request.user),
-            "presupuestos": Presupuesto.objects.filter(usuario=request.user)
-            .select_related("categoria")
-            .order_by("-anio", "-mes", "categoria__nombre"),
+            "presupuestos": Presupuesto.objects.filter(
+                usuario=request.user, mes=mes, anio=anio
+            ).select_related("categoria").order_by("categoria__nombre"),
+            "mes": mes, "anio": anio,
+            "nombre_mes": servicios.obtener_nombre_mes(mes),
+            "mes_ant": mes_ant, "anio_ant": anio_ant,
+            "mes_sig": mes_sig, "anio_sig": anio_sig,
         },
     )
+
+
+@login_required
+def copiar_presupuesto_mes(request):
+    if request.method != "POST":
+        return redirect("budget_create")
+    mes, anio = servicios.normalizar_periodo(
+        request.POST.get("mes"),
+        request.POST.get("anio"),
+    )
+    copiados = servicios.copiar_presupuestos_mes_anterior(request.user, mes, anio)
+    if copiados:
+        messages.success(request, f"Se copiaron {copiados} presupuesto(s) del mes anterior.")
+    else:
+        messages.warning(request, "No se encontraron presupuestos nuevos para copiar del mes anterior.")
+    return redirect(f"{reverse('budget_create')}?mes={mes}&anio={anio}")
 
 
 @login_required

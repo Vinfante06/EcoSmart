@@ -7,12 +7,14 @@
 {% block content %}
 <div class="es-page-head">
     <div class="es-page-head__text">
-        <span class="es-eyebrow">Periodo {{ mes }}/{{ anio }}</span>
-        <h2 class="es-page-head__title">Resumen por categoría</h2>
+        <span class="es-eyebrow">Presupuesto</span>
+        <h2 class="es-page-head__title">{{ nombre_mes }} {{ anio }}</h2>
         <p class="es-page-head__sub">Cuánto te queda este mes en cada categoría con presupuesto asignado.</p>
     </div>
     <div class="es-page-head__actions">
-        <a href="{% url 'budget_create' %}" class="es-btn es-btn--soft-primary"><i class="bi bi-plus-circle"></i> Nuevo presupuesto</a>
+        <a href="{% url 'remaining_budget' %}?mes={{ mes_ant }}&anio={{ anio_ant }}" class="es-btn es-btn--ghost"><i class="bi bi-chevron-left"></i> {{ mes_ant }}/{{ anio_ant }}</a>
+        <a href="{% url 'remaining_budget' %}?mes={{ mes_sig }}&anio={{ anio_sig }}" class="es-btn es-btn--ghost">{{ mes_sig }}/{{ anio_sig }} <i class="bi bi-chevron-right"></i></a>
+        <a href="{% url 'budget_create' %}?mes={{ mes }}&anio={{ anio }}" class="es-btn es-btn--soft-primary"><i class="bi bi-plus-circle"></i> Nuevo presupuesto</a>
         <a href="{% url 'expense_record' %}" class="es-btn es-btn--ghost"><i class="bi bi-dash-circle"></i> Registrar gasto</a>
     </div>
 </div>
@@ -66,8 +68,8 @@
     <div class="es-empty">
         <div class="es-empty__icon"><i class="bi bi-pie-chart"></i></div>
         <div><strong>Sin presupuestos para este periodo</strong></div>
-        <div class="es-fs-sm">Aún no has asignado presupuestos para {{ mes }}/{{ anio }}.</div>
-        <a href="{% url 'budget_create' %}" class="es-btn es-btn--primary es-mt-3"><i class="bi bi-plus-circle"></i> Crear presupuesto</a>
+        <div class="es-fs-sm">Aún no has asignado presupuestos para {{ nombre_mes }} {{ anio }}.</div>
+        <a href="{% url 'budget_create' %}?mes={{ mes }}&anio={{ anio }}" class="es-btn es-btn--primary es-mt-3"><i class="bi bi-plus-circle"></i> Crear presupuesto</a>
     </div>
 </div>
 {% endif %}

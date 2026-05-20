@@ -20,6 +20,7 @@ urlpatterns = [
 
     path('presupuesto/', views.budget_create, name='budget_create'),
     path('presupuesto/restante/', views.remaining_budget, name='remaining_budget'),
+    path('presupuesto/copiar/', views.copiar_presupuesto_mes, name='copiar_presupuesto_mes'),
 
     path('categorias/', views.manage_categories, name='manage_categories'),
     path('categorias/crear/', views.category_create, name='category_create'),

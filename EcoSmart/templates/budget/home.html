@@ -16,6 +16,28 @@
     </div>
 </section>
 
+{% if alertas_anomalias %}
+<div class="es-alert es-alert--warning" id="alertaAnomalias" role="alert" style="margin-bottom: 22px;">
+    <span class="es-alert__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+    <div class="es-alert__body">
+        <strong>Gastos inusuales detectados este mes</strong>
+        <ul style="padding-left: 1.25rem; margin: 6px 0 0 0;">
+            {% for a in alertas_anomalias %}
+            <li style="font-size: var(--es-fs-sm); margin-bottom: 2px;">
+                <strong>{{ a.categoria_nombre }}:</strong>
+                ${{ a.total_mes }} este mes
+                ({{ a.ratio }}x el promedio de ${{ a.promedio_mensual }}/mes)
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <button type="button" class="es-alert__close" aria-label="Cerrar"
+            onclick="this.closest('.es-alert').style.display='none'">
+        <i class="bi bi-x-lg"></i>
+    </button>
+</div>
+{% endif %}
+
 <div class="es-grid es-grid--auto-stat es-mb-4">
     <div class="es-stat">
         <span class="es-stat__label">
