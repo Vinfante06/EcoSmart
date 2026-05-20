@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Categorías — EcoSmart{% endblock %}
+{% block page_title %}Gestionar categorías{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Configuración</span>
+        <h2 class="es-page-head__title">Tus categorías</h2>
+        <p class="es-page-head__sub">Crea, edita o elimina categorías para clasificar mejor tus movimientos.</p>
+    </div>
+    <div class="es-page-head__actions">
+        <a href="{% url 'category_create' %}" class="es-btn es-btn--primary"><i class="bi bi-plus-circle"></i> Nueva categoría</a>
+    </div>
+</div>
+
+<div class="es-card">
+    {% if categorias %}
+    <div class="es-stack es-stack--sm">
+        {% for categoria in categorias %}
+        <div class="es-list-item">
+            <span class="es-list-item__icon es-list-item__icon--avatar">{{ categoria.nombre|first|upper }}</span>
+            <div class="es-list-item__body">
+                <div class="es-list-item__title">{{ categoria.nombre }}</div>
+                <div class="es-list-item__meta"><i class="bi bi-tag"></i> Categoría personalizada</div>
+            </div>
+            <div class="es-list-item__actions">
+                <a href="{% url 'category_edit' categoria.id %}" class="es-btn es-btn--ghost es-btn--sm"><i class="bi bi-pencil-square"></i> Editar</a>
+                <a href="{% url 'category_delete' categoria.id %}" class="es-btn es-btn--soft-danger es-btn--sm"><i class="bi bi-trash3"></i> Eliminar</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="es-empty">
+        <div class="es-empty__icon"><i class="bi bi-tags"></i></div>
+        <div><strong>Sin categorías aún</strong></div>
+        <div class="es-fs-sm">Empieza creando una categoría para organizar tus movimientos.</div>
+        <a href="{% url 'category_create' %}" class="es-btn es-btn--primary es-mt-3"><i class="bi bi-plus-circle"></i> Crear categoría</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

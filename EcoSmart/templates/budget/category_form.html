@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} — EcoSmart{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="es-center-narrow">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title">
+                <i class="bi bi-{% if action == 'crear' %}plus-circle{% else %}pencil-square{% endif %} es-text-primary"></i>
+                {{ titulo }}
+            </div>
+        </div>
+
+        <form action="" method="POST" class="es-stack">
+            {% csrf_token %}
+
+            <div class="es-field">
+                <label class="es-label" for="nombre">Nombre de la categoría</label>
+                <input type="text" name="nombre" id="nombre" class="es-input"
+                       value="{% if categoria %}{{ categoria.nombre }}{% endif %}"
+                       placeholder="Ej. Comida, Transporte, Suscripciones…" required>
+            </div>
+
+            <div class="es-row es-gap-sm">
+                <button type="submit" class="es-btn es-btn--primary es-flex-1">
+                    <i class="bi bi-check-circle"></i>
+                    {% if action == 'crear' %}Crear categoría{% else %}Actualizar categoría{% endif %}
+                </button>
+                <a href="{% url 'manage_categories' %}" class="es-btn es-btn--ghost"><i class="bi bi-arrow-left"></i> Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

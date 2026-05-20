@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EcoSmart — Crear cuenta</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/ecosmart.css' %}">
+</head>
+<body>
+<div class="es-auth">
+    <aside class="es-auth__brand">
+        <div class="es-auth__brand-top">
+            <img src="{% static 'img/logo.jpeg' %}" alt="EcoSmart" class="es-auth__brand-logo">
+            <span class="es-auth__brand-name">EcoSmart</span>
+        </div>
+        <div class="es-auth__brand-message">
+            <h2>Empieza a construir tu salud financiera hoy.</h2>
+            <p>Crea tu cuenta gratuita y obtén un panel claro para controlar gastos, presupuestos y objetivos de ahorro.</p>
+        </div>
+        <div class="es-auth__brand-foot">© 2026 EcoSmart — Gestiona tu futuro financiero</div>
+    </aside>
+
+    <main class="es-auth__form-wrap">
+        <form method="post" class="es-auth__form">
+            {% csrf_token %}
+
+            <div>
+                <h1>Crea tu cuenta</h1>
+                <p class="es-auth__form-sub">Solo necesitas un usuario y una contraseña segura.</p>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="id_username">Usuario</label>
+                <div class="es-input-group">
+                    <span class="es-input-group__addon"><i class="bi bi-person"></i></span>
+                    <input id="id_username" name="username" type="text" class="es-input" placeholder="Elige un nombre de usuario"
+                           value="{{ form.username.value|default:'' }}" required>
+                </div>
+                {% if form.username.errors %}
+                    {% for e in form.username.errors %}<div class="es-help es-text-danger">{{ e }}</div>{% endfor %}
+                {% endif %}
+                <div class="es-help">Letras, números y @/./+/-/_ solamente.</div>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="id_password1">Contraseña</label>
+                <div class="es-input-group">
+                    <span class="es-input-group__addon"><i class="bi bi-lock"></i></span>
+                    <input id="id_password1" name="password1" type="password" class="es-input" placeholder="Crea una contraseña segura" required>
+                </div>
+                {% if form.password1.errors %}
+                    {% for e in form.password1.errors %}<div class="es-help es-text-danger">{{ e }}</div>{% endfor %}
+                {% endif %}
+                <div class="es-help">Mínimo 8 caracteres. No puede ser solo números.</div>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="id_password2">Confirmar contraseña</label>
+                <div class="es-input-group">
+                    <span class="es-input-group__addon"><i class="bi bi-shield-lock"></i></span>
+                    <input id="id_password2" name="password2" type="password" class="es-input" placeholder="Repite tu contraseña" required>
+                </div>
+                {% if form.password2.errors %}
+                    {% for e in form.password2.errors %}<div class="es-help es-text-danger">{{ e }}</div>{% endfor %}
+                {% endif %}
+            </div>
+
+            <button type="submit" class="es-btn es-btn--primary es-btn--lg es-btn--block">
+                <i class="bi bi-person-plus"></i> Crear cuenta
+            </button>
+
+            <div class="es-auth__divider"></div>
+
+            <p class="es-text-muted es-fs-sm es-text-center es-m-0">
+                ¿Ya tienes cuenta?
+                <a href="{% url 'login' %}" class="es-text-primary es-fw-600">Inicia sesión</a>
+            </p>
+        </form>
+    </main>
+</div>
+</body>
+</html>

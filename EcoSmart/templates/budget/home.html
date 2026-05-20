@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}Inicio — EcoSmart{% endblock %}
+{% block page_title %}Inicio{% endblock %}
+
+{% block content %}
+<section class="es-hero es-mb-4">
+    <div class="es-hero__eyebrow">Resumen general</div>
+    <h1 class="es-hero__title">Hola{% if user.is_authenticated %}, {{ user.username }}{% endif %}</h1>
+    <p class="es-hero__sub">Tu salud financiera de un vistazo. Registra movimientos, define presupuestos y mantén el rumbo de tus objetivos.</p>
+    <div class="es-hero__actions">
+        <a href="{% url 'income_register' %}" class="es-btn es-btn--primary"><i class="bi bi-arrow-down-left-circle"></i> Nuevo ingreso</a>
+        <a href="{% url 'expense_record' %}" class="es-btn"><i class="bi bi-arrow-up-right-circle"></i> Nuevo gasto</a>
+    </div>
+</section>
+
+<div class="es-grid es-grid--auto-stat es-mb-4">
+    <div class="es-stat">
+        <span class="es-stat__label">
+            <span class="es-stat__icon es-stat__icon--income"><i class="bi bi-arrow-down-left"></i></span>
+            Ingresos
+        </span>
+        <div class="es-stat__value es-text-success">${{ total_ingresos }}</div>
+        <div class="es-stat__delta">Acumulado total</div>
+    </div>
+
+    <div class="es-stat">
+        <span class="es-stat__label">
+            <span class="es-stat__icon es-stat__icon--expense"><i class="bi bi-arrow-up-right"></i></span>
+            Gastos
+        </span>
+        <div class="es-stat__value es-text-danger">${{ total_gastos }}</div>
+        <div class="es-stat__delta">Acumulado total</div>
+    </div>
+
+    <div class="es-stat es-stat--accent">
+        <span class="es-stat__label">
+            <span class="es-stat__icon"><i class="bi bi-wallet2"></i></span>
+            Balance
+        </span>
+        <div class="es-stat__value">${{ balance }}</div>
+        <div class="es-stat__delta">Diferencia ingresos − gastos</div>
+    </div>
+</div>
+
+<div class="es-grid es-grid--two-thirds es-stack--lg">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div>
+                <div class="es-card__title"><i class="bi bi-pie-chart-fill es-text-primary"></i> Ingresos vs Gastos</div>
+                <div class="es-card__subtitle">Distribución de tu actividad financiera</div>
+            </div>
+        </div>
+        <div class="es-chart es-chart--lg">
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-lightning-charge-fill es-text-primary"></i> Acciones rápidas</div>
+        </div>
+        <div class="es-stack es-stack--sm">
+            <a href="{% url 'income_register' %}" class="es-quick">
+                <span class="es-quick__icon es-quick__icon--success"><i class="bi bi-arrow-down-left-circle"></i></span>
+                <div><div class="es-quick__title">Registrar ingreso</div><div class="es-quick__sub">Suma tus entradas</div></div>
+            </a>
+            <a href="{% url 'expense_record' %}" class="es-quick">
+                <span class="es-quick__icon es-quick__icon--danger"><i class="bi bi-arrow-up-right-circle"></i></span>
+                <div><div class="es-quick__title">Registrar gasto</div><div class="es-quick__sub">Anota tus salidas</div></div>
+            </a>
+            <a href="{% url 'budget_create' %}" class="es-quick">
+                <span class="es-quick__icon"><i class="bi bi-pie-chart"></i></span>
+                <div><div class="es-quick__title">Crear presupuesto</div><div class="es-quick__sub">Pon límites por categoría</div></div>
+            </a>
+            <a href="{% url 'savings_goal' %}" class="es-quick">
+                <span class="es-quick__icon es-quick__icon--warning"><i class="bi bi-bullseye"></i></span>
+                <div><div class="es-quick__title">Objetivos de ahorro</div><div class="es-quick__sub">Define metas concretas</div></div>
+            </a>
+            <a href="{% url 'financial_statistics' %}" class="es-quick">
+                <span class="es-quick__icon es-quick__icon--info"><i class="bi bi-bar-chart"></i></span>
+                <div><div class="es-quick__title">Estadísticas</div><div class="es-quick__sub">Mira tu evolución</div></div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('pieChart');
+        if (!ctx) return;
+
+        const ingresos = Number("{{ total_ingresos|default:0|unlocalize }}");
+        const gastos = Number("{{ total_gastos|default:0|unlocalize }}");
+
+        if (ingresos === 0 && gastos === 0) {
+            ctx.parentElement.innerHTML = `
+                <div class="es-empty">
+                    <div class="es-empty__icon"><i class="bi bi-bar-chart"></i></div>
+                    <div><strong>Aún no hay datos</strong></div>
+                    <div class="es-fs-sm">Registra ingresos y gastos para ver tu distribución.</div>
+                </div>`;
+            return;
+        }
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ingresos', 'Gastos'],
+                datasets: [{
+                    data: [ingresos, gastos],
+                    backgroundColor: ['#16a34a', '#ef4444'],
+                    borderColor: ['#ffffff', '#ffffff'],
+                    borderWidth: 3,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 18, font: { size: 13, weight: '600', family: 'Inter' }, color: '#0f172a', usePointStyle: true, pointStyle: 'circle' }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        padding: 12,
+                        titleFont: { size: 13, weight: '600', family: 'Inter' },
+                        bodyFont: { size: 13, family: 'Inter' },
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function (context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.parsed;
+                                const percentage = total ? ((value / total) * 100).toFixed(1) : 0;
+                                return ' $' + value.toFixed(2) + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

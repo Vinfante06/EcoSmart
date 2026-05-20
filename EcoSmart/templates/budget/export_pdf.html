@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes — EcoSmart{% endblock %}
+{% block page_title %}Centro de reportes{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Exportar</span>
+        <h2 class="es-page-head__title">Descarga tus reportes financieros</h2>
+        <p class="es-page-head__sub">Elige el periodo y obtén un resumen completo en PDF o Excel: presupuestos, ingresos, gastos y objetivos.</p>
+    </div>
+</div>
+
+<div class="es-center-wide">
+    <div class="es-card es-mb-4">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-calendar3 es-text-primary"></i> Periodo</div>
+        </div>
+
+        <div class="es-form-row es-mb-4">
+            <div class="es-field">
+                <label class="es-label" for="mes">Mes</label>
+                <select id="mes" class="es-select">
+                    <option value="1"  {% if current_month == 1  %}selected{% endif %}>Enero</option>
+                    <option value="2"  {% if current_month == 2  %}selected{% endif %}>Febrero</option>
+                    <option value="3"  {% if current_month == 3  %}selected{% endif %}>Marzo</option>
+                    <option value="4"  {% if current_month == 4  %}selected{% endif %}>Abril</option>
+                    <option value="5"  {% if current_month == 5  %}selected{% endif %}>Mayo</option>
+                    <option value="6"  {% if current_month == 6  %}selected{% endif %}>Junio</option>
+                    <option value="7"  {% if current_month == 7  %}selected{% endif %}>Julio</option>
+                    <option value="8"  {% if current_month == 8  %}selected{% endif %}>Agosto</option>
+                    <option value="9"  {% if current_month == 9  %}selected{% endif %}>Septiembre</option>
+                    <option value="10" {% if current_month == 10 %}selected{% endif %}>Octubre</option>
+                    <option value="11" {% if current_month == 11 %}selected{% endif %}>Noviembre</option>
+                    <option value="12" {% if current_month == 12 %}selected{% endif %}>Diciembre</option>
+                </select>
+            </div>
+            <div class="es-field">
+                <label class="es-label" for="anio">Año</label>
+                <select id="anio" class="es-select">
+                    {% for year in years %}
+                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="es-grid es-grid--2">
+            <div class="es-card es-card--compact es-card--danger-border es-text-center">
+                <div class="es-empty__icon es-empty__icon--danger es-empty__icon--report"><i class="bi bi-file-earmark-pdf"></i></div>
+                <h3 class="es-mb-2">Reporte PDF</h3>
+                <p class="es-text-muted es-fs-sm es-mb-3">Formato profesional ideal para imprimir o compartir.</p>
+                <button type="button" class="es-btn es-btn--danger es-btn--block" id="btn-pdf"><i class="bi bi-download"></i> Descargar PDF</button>
+            </div>
+            <div class="es-card es-card--compact es-card--primary-border es-text-center">
+                <div class="es-empty__icon es-empty__icon--primary es-empty__icon--report"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+                <h3 class="es-mb-2">Reporte Excel</h3>
+                <p class="es-text-muted es-fs-sm es-mb-3">Formato editable ideal para análisis personalizados.</p>
+                <button type="button" class="es-btn es-btn--primary es-btn--block" id="btn-excel"><i class="bi bi-download"></i> Descargar Excel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="es-alert es-alert--info">
+        <span class="es-alert__icon"><i class="bi bi-info-circle-fill"></i></span>
+        <div class="es-alert__body">
+            <strong>Contenido del reporte:</strong>
+            <ul class="es-report-list">
+                <li>Presupuestos vs gastos del mes</li>
+                <li>Ingresos y gastos registrados</li>
+                <li>Objetivos de ahorro y su progreso</li>
+                <li>Resumen financiero completo</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const mesSelect  = document.getElementById('mes');
+    const anioSelect = document.getElementById('anio');
+    document.getElementById('btn-pdf').addEventListener('click', function() {
+        window.location.href = `/reportes/pdf/download/?mes=${mesSelect.value}&anio=${anioSelect.value}`;
+    });
+    document.getElementById('btn-excel').addEventListener('click', function() {
+        window.location.href = `/reportes/excel/download/?mes=${mesSelect.value}&anio=${anioSelect.value}`;
+    });
+});
+</script>
+{% endblock %}

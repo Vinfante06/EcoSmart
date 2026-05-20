@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}Análisis de hábitos — EcoSmart{% endblock %}
+{% block page_title %}Análisis de hábitos{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Tus patrones</span>
+        <h2 class="es-page-head__title">Hábitos de gasto</h2>
+        <p class="es-page-head__sub">Identifica en qué se va tu dinero, cómo evolucionas mes a mes y dónde ajustar.</p>
+    </div>
+</div>
+
+{% if not total_gastos %}
+<div class="es-card">
+    <div class="es-empty">
+        <div class="es-empty__icon"><i class="bi bi-bar-chart"></i></div>
+        <div><strong>Aún no tienes gastos registrados</strong></div>
+        <div class="es-fs-sm">Para ver tu análisis necesitamos al menos un gasto.</div>
+        <a href="{% url 'expense_record' %}" class="es-btn es-btn--primary es-mt-3"><i class="bi bi-plus-circle"></i> Registrar gasto</a>
+    </div>
+</div>
+{% else %}
+
+<div class="es-grid es-grid--auto-stat es-mb-4">
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon es-stat__icon--expense"><i class="bi bi-cash-stack"></i></span> Total gastado</span>
+        <div class="es-stat__value es-text-danger">${{ total_gastos|floatformat:2 }}</div>
+        <div class="es-stat__delta">Acumulado total</div>
+    </div>
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon es-stat__icon--savings"><i class="bi bi-calendar3"></i></span> Promedio mensual</span>
+        <div class="es-stat__value">${{ promedio_mensual|floatformat:2 }}</div>
+        <div class="es-stat__delta">Gasto medio por mes</div>
+    </div>
+    {% if tendencia %}
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon {% if tendencia.sube %}es-stat__icon--expense{% else %}es-stat__icon--income{% endif %}"><i class="bi bi-arrow-{% if tendencia.sube %}up{% else %}down{% endif %}"></i></span> Tendencia</span>
+        <div class="es-stat__value {% if tendencia.sube %}es-text-danger{% else %}es-text-success{% endif %}">${{ tendencia.diferencia|floatformat:2 }}</div>
+        <div class="es-stat__delta">{% if tendencia.sube %}Subió{% else %}Bajó{% endif %} respecto a {{ tendencia.mes_anterior }}</div>
+    </div>
+    {% endif %}
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon"><i class="bi bi-tags"></i></span> Categorías activas</span>
+        <div class="es-stat__value">{{ gastos_por_cat|length }}</div>
+        <div class="es-stat__delta">Con gasto registrado</div>
+    </div>
+</div>
+
+<div class="es-grid es-grid--two-thirds es-mb-4">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-bar-chart"></i> Evolución mensual de gastos</div>
+        </div>
+        <div class="es-chart"><canvas id="chartMeses"></canvas></div>
+    </div>
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-pie-chart"></i> Distribución por categoría</div>
+        </div>
+        <div class="es-chart"><canvas id="chartCategorias"></canvas></div>
+    </div>
+</div>
+
+{% if top3 %}
+<h3 class="es-section-title">Top 3 categorías</h3>
+<div class="es-grid es-grid--3 es-mb-4">
+    {% for cat in top3 %}
+    <div class="es-card">
+        <div class="es-row es-row--between es-mb-2">
+            <span class="es-fw-600">{{ cat.categoria__nombre|default:"Sin categoría" }}</span>
+            <span class="es-badge es-badge--primary">#{{ forloop.counter }}</span>
+        </div>
+        <div class="es-stat__value es-text-danger es-mb-2">${{ cat.total|floatformat:2 }}</div>
+        <div class="es-help es-mb-3">{{ cat.cantidad }} transacción{{ cat.cantidad|pluralize:"es" }}</div>
+        <div class="es-progress"><div class="es-progress__bar" style="width:{{ cat.porcentaje|unlocalize }}%"></div></div>
+        <div class="es-help es-mt-3 es-text-right">{{ cat.porcentaje }}% del total</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="es-card">
+    <div class="es-card__head">
+        <div class="es-card__title"><i class="bi bi-table"></i> Detalle por categoría</div>
+    </div>
+    <div class="es-table-wrap">
+        <table class="es-table">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th class="is-numeric">Total gastado</th>
+                    <th>Transacciones</th>
+                    <th>Participación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in gastos_por_cat %}
+                <tr>
+                    <td class="is-strong"><i class="bi bi-tag-fill es-text-primary"></i> {{ cat.categoria__nombre|default:"Sin categoría" }}</td>
+                    <td class="is-numeric es-text-danger es-fw-700">${{ cat.total|floatformat:2 }}</td>
+                    <td><span class="es-badge">{{ cat.cantidad }}</span></td>
+                    <td class="es-progress-cell">
+                        <div class="es-row es-gap-sm">
+                            <div class="es-progress es-flex-1"><div class="es-progress__bar" style="width:{{ cat.porcentaje|unlocalize }}%"></div></div>
+                            <span class="es-help es-numeric es-nowrap">{{ cat.porcentaje }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class="is-strong">Total</td>
+                    <td class="is-numeric es-text-danger es-fw-700">${{ total_gastos|floatformat:2 }}</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const catLabels  = {{ cat_labels_json|safe }};
+const catTotales = {{ cat_totales_json|safe }};
+const mesLabels  = {{ meses_labels_json|safe }};
+const mesTotales = {{ meses_totales_json|safe }};
+
+const palette = ['#16a34a','#22c55e','#84cc16','#f59e0b','#ef4444','#ec4899','#8b5cf6','#3b82f6','#06b6d4','#64748b'];
+
+const tipo  = { font: { family: 'Inter', size: 12 }, color: '#64748b' };
+const grid  = { color: '#e5e7eb', drawBorder: false };
+
+if (catLabels.length > 0) {
+    new Chart(document.getElementById('chartCategorias'), {
+        type: 'doughnut',
+        data: {
+            labels: catLabels,
+            datasets: [{ data: catTotales, backgroundColor: palette.slice(0, catLabels.length), borderWidth: 3, borderColor: '#ffffff' }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 16, font: { family: 'Inter', size: 12, weight: '600' }, color: '#0f172a', usePointStyle: true } },
+                tooltip: { backgroundColor: '#0f172a', cornerRadius: 8, padding: 10, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' }, callbacks: { label: ctx => ' $' + ctx.parsed.toLocaleString('es-CO', { minimumFractionDigits: 2 }) } }
+            }
+        }
+    });
+}
+
+if (mesLabels.length > 0) {
+    new Chart(document.getElementById('chartMeses'), {
+        type: 'bar',
+        data: { labels: mesLabels, datasets: [{ label: 'Gasto mensual', data: mesTotales, backgroundColor: '#16a34a', borderRadius: 6, borderSkipped: false }] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: '#0f172a', cornerRadius: 8, padding: 10, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' }, callbacks: { label: ctx => ' $' + ctx.parsed.y.toLocaleString('es-CO', { minimumFractionDigits: 2 }) } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: grid, ticks: { ...tipo, callback: v => '$' + v.toLocaleString('es-CO') } },
+                x: { grid: { display: false }, ticks: tipo }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}EcoSmart — Gestor de Presupuesto{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="{% static 'css/ecosmart.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% block layout %}
+<div class="es-shell {% block shell_class %}{% endblock %}">
+
+    {% if user.is_authenticated %}
+    <aside class="es-sidebar" id="esSidebar">
+        <div class="es-sidebar__brand">
+            <img src="{% static 'img/logo.jpeg' %}" alt="EcoSmart" class="es-sidebar__logo">
+            <div class="es-sidebar__brand-text">
+                <span class="es-sidebar__brand-name">EcoSmart</span>
+                <span class="es-sidebar__brand-slogan">Gestiona tu futuro</span>
+            </div>
+        </div>
+
+        <nav class="es-sidebar__nav">
+            <div class="es-sidebar__group">
+                <span class="es-sidebar__label">Principal</span>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}" href="{% url 'home' %}">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span class="es-sidebar__item-label">Inicio</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'transaction_history' %}is-active{% endif %}" href="{% url 'transaction_history' %}">
+                    <i class="bi bi-clock-history"></i>
+                    <span class="es-sidebar__item-label">Historial</span>
+                </a>
+            </div>
+
+            <div class="es-sidebar__group">
+                <span class="es-sidebar__label">Transacciones</span>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'income_register' %}is-active{% endif %}" href="{% url 'income_register' %}">
+                    <i class="bi bi-arrow-down-left-circle"></i>
+                    <span class="es-sidebar__item-label">Ingresos</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'expense_record' %}is-active{% endif %}" href="{% url 'expense_record' %}">
+                    <i class="bi bi-arrow-up-right-circle"></i>
+                    <span class="es-sidebar__item-label">Gastos</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'manage_categories' or request.resolver_match.url_name == 'category_create' or request.resolver_match.url_name == 'category_edit' %}is-active{% endif %}" href="{% url 'manage_categories' %}">
+                    <i class="bi bi-tags"></i>
+                    <span class="es-sidebar__item-label">Categorías</span>
+                </a>
+            </div>
+
+            <div class="es-sidebar__group">
+                <span class="es-sidebar__label">Presupuesto</span>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'budget_create' %}is-active{% endif %}" href="{% url 'budget_create' %}">
+                    <i class="bi bi-pie-chart"></i>
+                    <span class="es-sidebar__item-label">Crear presupuesto</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'remaining_budget' %}is-active{% endif %}" href="{% url 'remaining_budget' %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span class="es-sidebar__item-label">Restante</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'savings_goal' %}is-active{% endif %}" href="{% url 'savings_goal' %}">
+                    <i class="bi bi-bullseye"></i>
+                    <span class="es-sidebar__item-label">Ahorro</span>
+                </a>
+            </div>
+
+            <div class="es-sidebar__group">
+                <span class="es-sidebar__label">Análisis</span>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'financial_statistics' %}is-active{% endif %}" href="{% url 'financial_statistics' %}">
+                    <i class="bi bi-bar-chart"></i>
+                    <span class="es-sidebar__item-label">Estadísticas</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'analizar_habitos' %}is-active{% endif %}" href="{% url 'analizar_habitos' %}">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span class="es-sidebar__item-label">Hábitos</span>
+                </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'export_pdfpage' %}is-active{% endif %}" href="{% url 'export_pdfpage' %}">
+                    <i class="bi bi-file-earmark-arrow-down"></i>
+                    <span class="es-sidebar__item-label">Reportes</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="es-sidebar__footer">
+            <div class="es-sidebar__user">
+                <div class="es-sidebar__avatar">{{ user.username|first|upper }}</div>
+                <div class="es-sidebar__user-info">
+                    <span class="es-sidebar__user-name">{{ user.username }}</span>
+                    <span class="es-sidebar__user-role">Usuario</span>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="es-btn es-btn--ghost es-btn--sm es-btn--block">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="es-sidebar__logout-label">Cerrar sesión</span>
+            </a>
+        </div>
+    </aside>
+    <div class="es-sidebar-backdrop" id="esBackdrop"></div>
+    {% endif %}
+
+    <div class="es-main">
+        {% if user.is_authenticated %}
+        <header class="es-topbar">
+            <button class="es-topbar__menu-btn" id="esMenuBtn" type="button" aria-label="Abrir menú">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="es-topbar__title">
+                <span class="es-topbar__heading">{% block page_title %}EcoSmart{% endblock %}</span>
+                {% block page_subtitle_block %}{% if block.super %}{% endif %}{% endblock %}
+                {% block page_sub %}{% endblock %}
+            </div>
+            <div class="es-topbar__actions">
+                {% block topbar_actions %}{% endblock %}
+            </div>
+        </header>
+        {% endif %}
+
+        <div class="es-content">
+            {% if messages %}
+                <div class="es-alert-stack">
+                    {% for message in messages %}
+                        <div class="es-alert es-alert--{{ message.tags|default:'info' }}" role="alert">
+                            <span class="es-alert__icon">
+                                {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill"></i>
+                                {% elif message.tags == 'error' or message.tags == 'danger' %}<i class="bi bi-x-circle-fill"></i>
+                                {% elif message.tags == 'warning' %}<i class="bi bi-exclamation-triangle-fill"></i>
+                                {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+                            </span>
+                            <div class="es-alert__body">{{ message }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+        {% if user.is_authenticated %}
+        <footer class="es-footer">
+            &copy; 2026 EcoSmart — Gestiona tu futuro financiero
+        </footer>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    (function () {
+        var btn = document.getElementById('esMenuBtn');
+        var sidebar = document.getElementById('esSidebar');
+        var backdrop = document.getElementById('esBackdrop');
+        if (!btn || !sidebar) return;
+        function close() { sidebar.classList.remove('is-open'); backdrop && backdrop.classList.remove('is-open'); }
+        btn.addEventListener('click', function () {
+            sidebar.classList.toggle('is-open');
+            backdrop && backdrop.classList.toggle('is-open');
+        });
+        backdrop && backdrop.addEventListener('click', close);
+        sidebar.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    })();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

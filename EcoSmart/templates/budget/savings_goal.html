@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}Objetivos de ahorro — EcoSmart{% endblock %}
+{% block page_title %}Objetivos de ahorro{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Ahorro</span>
+        <h2 class="es-page-head__title">Define metas claras</h2>
+        <p class="es-page-head__sub">Crea objetivos, registra abonos y mira cómo avanzas hacia cada meta.</p>
+    </div>
+    <div class="es-page-head__actions">
+        <span class="es-badge">{{ objetivos|length }} {% if objetivos|length == 1 %}objetivo{% else %}objetivos{% endif %}</span>
+    </div>
+</div>
+
+<div class="es-grid es-grid--one-third es-mb-4">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-bullseye es-text-primary"></i> Nuevo objetivo</div>
+        </div>
+
+        {% if error %}
+        <div class="es-alert es-alert--danger es-mb-4">
+            <span class="es-alert__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+            <div class="es-alert__body">{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <form method="POST" class="es-stack">
+            {% csrf_token %}
+
+            <div class="es-field">
+                <label class="es-label" for="nombre">Nombre del objetivo</label>
+                <input type="text" name="nombre" id="nombre" class="es-input" placeholder="Ej. Fondo de emergencia" required>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="monto_objetivo">Monto objetivo</label>
+                <div class="es-input-group">
+                    <span class="es-input-group__addon">$</span>
+                    <input type="number" name="monto_objetivo" id="monto_objetivo" class="es-input" step="0.01" min="0.01" placeholder="0.00" required>
+                </div>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="fecha_objetivo">Fecha objetivo <span class="es-text-subtle">(opcional)</span></label>
+                <input type="date" name="fecha_objetivo" id="fecha_objetivo" class="es-input">
+            </div>
+
+            <button type="submit" class="es-btn es-btn--primary es-btn--lg es-btn--block">
+                <i class="bi bi-check-circle"></i> Guardar objetivo
+            </button>
+        </form>
+    </div>
+
+    <div class="es-stack es-stack--sm">
+        {% if objetivos %}
+            {% for item in objetivos %}
+            <div class="es-card">
+                <div class="es-row es-row--between es-row--start es-mb-3">
+                    <div>
+                        <div class="es-fw-700 es-saving-title">{{ item.obj.nombre }}</div>
+                        <div class="es-help">
+                            {% if item.obj.fecha_objetivo %}<i class="bi bi-calendar3"></i> {{ item.obj.fecha_objetivo }}{% else %}Sin fecha definida{% endif %}
+                        </div>
+                    </div>
+                    {% if item.completado %}
+                    <span class="es-badge es-badge--success"><i class="bi bi-check-circle"></i> Completado</span>
+                    {% else %}
+                    <span class="es-badge es-badge--warning"><i class="bi bi-hourglass-split"></i> En progreso</span>
+                    {% endif %}
+                </div>
+
+                <div class="es-row es-row--between es-fs-sm es-mb-2">
+                    <span class="es-text-muted">Ahorrado <strong class="es-text-primary es-numeric">${{ item.obj.monto_ahorrado }}</strong></span>
+                    <span class="es-text-muted">Meta <strong class="es-numeric">${{ item.obj.monto_objetivo }}</strong></span>
+                </div>
+
+                <div class="es-progress es-progress--xl es-mb-3">
+                    <div class="es-progress__bar" style="width:{{ item.progreso_visual|unlocalize }}%"></div>
+                </div>
+
+                <div class="es-row es-row--between es-mb-3">
+                    <span class="es-fs-sm es-text-muted">Progreso: <strong class="es-text-primary">{{ item.progreso }}%</strong></span>
+                    <span class="es-fs-sm es-text-muted">Restante: <strong class="es-numeric">${{ item.restante }}</strong></span>
+                </div>
+
+                <form method="POST" class="es-row es-row--end es-row--nowrap es-gap-xs">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_progress">
+                    <input type="hidden" name="objetivo_id" value="{{ item.obj.id }}">
+                    <div class="es-input-group es-saving-input">
+                        <span class="es-input-group__addon">$</span>
+                        <input type="number" name="abono" class="es-input" step="0.01" min="0.01" placeholder="Abono" required>
+                    </div>
+                    <button type="submit" class="es-btn es-btn--soft-primary"><i class="bi bi-plus-circle"></i> Registrar</button>
+                </form>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="es-card">
+                <div class="es-empty">
+                    <div class="es-empty__icon"><i class="bi bi-bullseye"></i></div>
+                    <div><strong>Aún no tienes objetivos</strong></div>
+                    <div class="es-fs-sm">Define tu primer objetivo de ahorro a la izquierda.</div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

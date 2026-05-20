@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar ingreso — EcoSmart{% endblock %}
+{% block page_title %}Registrar ingreso{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Movimientos · Ingresos</span>
+        <h2 class="es-page-head__title">Suma una nueva entrada</h2>
+        <p class="es-page-head__sub">Registra tus ingresos y observa la distribución por categoría en tiempo real.</p>
+    </div>
+</div>
+
+<div class="es-grid es-grid--2 es-mb-4">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-plus-circle es-text-success"></i> Nuevo ingreso</div>
+        </div>
+        <form action="" method="POST" class="es-stack">
+            {% csrf_token %}
+
+            <div class="es-field">
+                <label class="es-label" for="descripcion">Descripción</label>
+                <input type="text" name="descripcion" id="descripcion" class="es-input" placeholder="Ej. Salario mensual, freelance…" required>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="monto">Monto</label>
+                <div class="es-input-group">
+                    <span class="es-input-group__addon">$</span>
+                    <input type="number" name="monto" id="monto" class="es-input" step="0.01" placeholder="0.00" required>
+                </div>
+            </div>
+
+            <div class="es-field">
+                <label class="es-label" for="categoria">Categoría <span class="es-text-subtle">(opcional)</span></label>
+                <select name="categoria" id="categoria" class="es-select">
+                    <option value="">— Sin categoría —</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="es-btn es-btn--primary es-btn--lg es-btn--block">
+                <i class="bi bi-check-circle"></i> Guardar ingreso
+            </button>
+        </form>
+    </div>
+
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-pie-chart-fill es-text-success"></i> Por categoría</div>
+            <span class="es-card__subtitle">Distribución actual</span>
+        </div>
+        <div class="es-chart"><canvas id="chartIngresos"></canvas></div>
+    </div>
+</div>
+
+<div class="es-card es-mb-4">
+    <form method="GET" action="" class="es-row es-gap-sm">
+        <i class="bi bi-funnel es-text-muted"></i>
+        <select name="categoria" id="f_categoria" class="es-select es-filter-select">
+            <option value="">— Todas las categorías —</option>
+            {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if filtro_categoria == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="es-btn es-btn--ghost"><i class="bi bi-funnel"></i> Filtrar</button>
+        {% if filtro_categoria %}
+        <a href="{% url 'income_register' %}" class="es-btn es-btn--soft-danger"><i class="bi bi-x-lg"></i> Limpiar</a>
+        {% endif %}
+    </form>
+</div>
+
+<h3 class="es-section-title">Ingresos registrados</h3>
+
+<div class="es-stack es-stack--sm">
+    {% for ingreso in ingresos %}
+    <div class="es-list-item">
+        <span class="es-list-item__icon es-list-item__icon--income"><i class="bi bi-arrow-down-left"></i></span>
+        <div class="es-list-item__body">
+            <div class="es-list-item__title">{{ ingreso.descripcion }}</div>
+            <div class="es-list-item__meta">
+                <i class="bi bi-calendar3"></i> {{ ingreso.fecha }}
+                {% if ingreso.categoria %} &nbsp;·&nbsp; <span class="es-badge">{{ ingreso.categoria }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="es-list-item__amount es-list-item__amount--income">+ ${{ ingreso.monto }}</div>
+        <div class="es-list-item__actions">
+            <button class="es-btn es-btn--ghost es-btn--icon es-btn--sm" data-bs-toggle="modal" data-bs-target="#modalEliminar"
+                    data-id="{{ ingreso.id }}" data-desc="{{ ingreso.descripcion }}" title="Eliminar ingreso">
+                <i class="bi bi-trash3"></i>
+            </button>
+        </div>
+    </div>
+    {% empty %}
+    <div class="es-card">
+        <div class="es-empty">
+            <div class="es-empty__icon"><i class="bi bi-inbox"></i></div>
+            <div><strong>Sin ingresos aún</strong></div>
+            <div class="es-fs-sm">Registra tu primer ingreso usando el formulario.</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content es-modal-card">
+            <div class="modal-body es-modal-body">
+                <div class="es-empty__icon es-empty__icon--danger es-empty__icon--centered"><i class="bi bi-trash3"></i></div>
+                <h3 class="es-mb-2">¿Eliminar ingreso?</h3>
+                <p class="es-text-muted es-fs-sm" id="modalDesc">Esta acción no se puede deshacer.</p>
+                <div class="es-row es-row--center es-gap-sm es-mt-3">
+                    <button type="button" class="es-btn es-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="formEliminar" method="POST" action="" class="es-m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="es-btn es-btn--danger"><i class="bi bi-trash3"></i> Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="datosGrafica">
+{
+    "categorias": {{ categorias_json|safe }},
+    "montos": {{ montos_json|safe }}
+}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('modalEliminar');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('modalDesc').textContent = '"' + btn.getAttribute('data-desc') + '"';
+            document.getElementById('formEliminar').action = '/ingreso/eliminar/' + btn.getAttribute('data-id') + '/';
+        });
+    }
+
+    try {
+        const datos = JSON.parse(document.getElementById('datosGrafica').textContent);
+        const categorias = datos.categorias;
+        const montos = datos.montos;
+        if (!categorias || categorias.length === 0) {
+            const ctxEl = document.getElementById('chartIngresos');
+            if (ctxEl) ctxEl.parentElement.innerHTML = '<div class="es-empty"><div class="es-empty__icon"><i class="bi bi-bar-chart"></i></div><div class="es-fs-sm">Aún no hay datos de ingresos.</div></div>';
+            return;
+        }
+        const palette = ['#16a34a','#22c55e','#84cc16','#0ea5e9','#3b82f6','#8b5cf6','#ec4899','#f59e0b','#06b6d4','#64748b'];
+        new Chart(document.getElementById('chartIngresos'), {
+            type: 'doughnut',
+            data: { labels: categorias, datasets: [{ data: montos, backgroundColor: palette.slice(0, categorias.length), borderWidth: 3, borderColor: '#ffffff', hoverOffset: 10 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 14, font: { family: 'Inter', size: 12, weight: '600' }, color: '#0f172a', usePointStyle: true } },
+                    tooltip: {
+                        backgroundColor: '#0f172a', cornerRadius: 8, padding: 10, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' },
+                        callbacks: { label: ctx => { const t = ctx.dataset.data.reduce((a,b)=>a+b,0); const p = t ? (ctx.parsed / t * 100).toFixed(1) : 0; return ' $' + ctx.parsed.toFixed(2) + ' (' + p + '%)'; } }
+                    }
+                }
+            }
+        });
+    } catch (e) { console.error('Error gráfica ingresos:', e); }
+});
+</script>
+{% endblock %}

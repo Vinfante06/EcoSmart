@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}Estadísticas — EcoSmart{% endblock %}
+{% block page_title %}Estadísticas financieras{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Análisis</span>
+        <h2 class="es-page-head__title">Indicadores clave</h2>
+        <p class="es-page-head__sub">Vista general de tu salud financiera, promedios y evolución mensual.</p>
+    </div>
+</div>
+
+<div class="es-grid es-grid--auto-stat es-mb-4">
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon es-stat__icon--income"><i class="bi bi-arrow-down-left"></i></span> Total ingresos</span>
+        <div class="es-stat__value es-text-success">${{ total_ingresos }}</div>
+        <div class="es-stat__delta">{{ num_ingresos }} {% if num_ingresos == 1 %}transacción{% else %}transacciones{% endif %}</div>
+    </div>
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon es-stat__icon--expense"><i class="bi bi-arrow-up-right"></i></span> Total gastos</span>
+        <div class="es-stat__value es-text-danger">${{ total_gastos }}</div>
+        <div class="es-stat__delta">{{ num_gastos }} {% if num_gastos == 1 %}transacción{% else %}transacciones{% endif %}</div>
+    </div>
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon es-stat__icon--balance"><i class="bi bi-wallet2"></i></span> Balance</span>
+        <div class="es-stat__value {% if balance >= 0 %}es-text-primary{% else %}es-text-danger{% endif %}">${{ balance }}</div>
+        <div class="es-stat__delta">Ingresos − gastos</div>
+    </div>
+    <div class="es-stat">
+        <span class="es-stat__label"><span class="es-stat__icon es-stat__icon--savings"><i class="bi bi-piggy-bank"></i></span> Tasa de ahorro</span>
+        <div class="es-stat__value">{{ tasa_ahorro }}%</div>
+        <div class="es-stat__delta">Del total de ingresos</div>
+    </div>
+</div>
+
+<div class="es-grid es-grid--2 es-mb-4">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-graph-up-arrow es-text-success"></i> Ingreso promedio</div>
+        </div>
+        <div class="es-stat__value es-text-success">${{ promedio_ingreso }}</div>
+        <div class="es-help">Promedio por transacción</div>
+    </div>
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-graph-down-arrow es-text-danger"></i> Gasto promedio</div>
+        </div>
+        <div class="es-stat__value es-text-danger">${{ promedio_gasto }}</div>
+        <div class="es-help">Promedio por transacción</div>
+    </div>
+</div>
+
+{% if top_categoria %}
+<div class="es-card es-mb-4">
+    <div class="es-card__head">
+        <div>
+            <div class="es-eyebrow">Categoría destacada</div>
+            <div class="es-card__title">Mayor gasto del periodo</div>
+        </div>
+    </div>
+    <div class="es-row es-row--between es-mb-2">
+        <div class="es-fw-600"><i class="bi bi-tag es-text-danger"></i> {{ top_categoria.categoria__nombre|default:"Sin categoría" }}</div>
+        <div class="es-fw-700 es-text-danger es-numeric">${{ top_categoria.total }}</div>
+    </div>
+    {% if total_gastos > 0 %}
+    <div class="es-progress es-progress--lg">
+        <div class="es-progress__bar es-progress__bar--danger" style="width: {% widthratio top_categoria.total total_gastos 100 %}%"></div>
+    </div>
+    <div class="es-help es-mt-3">{% widthratio top_categoria.total total_gastos 100 %}% del total de gastos</div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if cat_gastos %}
+<div class="es-card es-mb-4">
+    <div class="es-card__head">
+        <div class="es-card__title"><i class="bi bi-bar-chart"></i> Gastos por categoría</div>
+    </div>
+    <div class="es-stack es-stack--sm">
+        {% for cat in cat_gastos %}
+        <div>
+            <div class="es-row es-row--between es-mb-2">
+                <span class="es-fw-600">{{ cat.categoria__nombre|default:"Sin categoría" }}</span>
+                <span class="es-text-danger es-fw-700 es-numeric">${{ cat.total }}</span>
+            </div>
+            {% if total_gastos > 0 %}
+            <div class="es-progress">
+                <div class="es-progress__bar es-progress__bar--danger" style="width: {% widthratio cat.total total_gastos 100 %}%"></div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if evolucion %}
+<div class="es-card es-mb-4">
+    <div class="es-card__head">
+        <div class="es-card__title"><i class="bi bi-calendar3"></i> Evolución mensual</div>
+    </div>
+
+    {% if mes_mayor_gasto %}
+    <div class="es-alert es-alert--warning es-mb-4">
+        <span class="es-alert__icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+        <div class="es-alert__body">Mes con mayor gasto: <strong>{{ mes_mayor_gasto.mes }}</strong> — ${{ mes_mayor_gasto.gasto }}</div>
+    </div>
+    {% endif %}
+
+    <div class="es-table-wrap es-mb-4">
+        <table class="es-table">
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th class="is-numeric">Ingresos</th>
+                    <th class="is-numeric">Gastos</th>
+                    <th class="is-numeric">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in evolucion %}
+                <tr>
+                    <td class="is-strong">{{ fila.mes }}</td>
+                    <td class="is-numeric es-text-success es-fw-600">${{ fila.ingreso }}</td>
+                    <td class="is-numeric es-text-danger es-fw-600">${{ fila.gasto }}</td>
+                    <td class="is-numeric es-fw-700 {% if fila.balance >= 0 %}es-text-primary{% else %}es-text-danger{% endif %}">${{ fila.balance }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="es-chart">
+        <canvas id="chartEvolucion"></canvas>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    {% if evolucion %}
+    const labels   = [{% for f in evolucion %}"{{ f.mes }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    const ingresos = [{% for f in evolucion %}{{ f.ingreso|unlocalize }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    const gastos   = [{% for f in evolucion %}{{ f.gasto|unlocalize }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    new Chart(document.getElementById('chartEvolucion'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Ingresos', data: ingresos, backgroundColor: '#16a34a', borderRadius: 6 },
+                { label: 'Gastos',   data: gastos,   backgroundColor: '#ef4444', borderRadius: 6 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { font: { family: 'Inter', size: 12, weight: '600' }, color: '#0f172a', usePointStyle: true } },
+                tooltip: { backgroundColor: '#0f172a', cornerRadius: 8, padding: 10, titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#e5e7eb', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Inter' } } },
+                x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter' } } }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

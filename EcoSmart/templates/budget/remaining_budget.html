@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}Presupuesto restante — EcoSmart{% endblock %}
+{% block page_title %}Presupuesto restante{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Periodo {{ mes }}/{{ anio }}</span>
+        <h2 class="es-page-head__title">Resumen por categoría</h2>
+        <p class="es-page-head__sub">Cuánto te queda este mes en cada categoría con presupuesto asignado.</p>
+    </div>
+    <div class="es-page-head__actions">
+        <a href="{% url 'budget_create' %}" class="es-btn es-btn--soft-primary"><i class="bi bi-plus-circle"></i> Nuevo presupuesto</a>
+        <a href="{% url 'expense_record' %}" class="es-btn es-btn--ghost"><i class="bi bi-dash-circle"></i> Registrar gasto</a>
+    </div>
+</div>
+
+{% if presupuestos %}
+<div class="es-card">
+    <div class="es-table-wrap">
+        <table class="es-table">
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th class="is-numeric">Límite</th>
+                    <th class="is-numeric">Gastos</th>
+                    <th class="is-numeric">Restante</th>
+                    <th>Utilización</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in presupuestos %}
+                <tr>
+                    <td class="is-strong">{{ item.presupuesto.categoria.nombre }}</td>
+                    <td class="is-numeric">${{ item.presupuesto.monto_limite }}</td>
+                    <td class="is-numeric es-text-danger es-fw-600">${{ item.total_gastos }}</td>
+                    <td class="is-numeric es-fw-700 {% if item.restante < 0 %}es-text-danger{% else %}es-text-success{% endif %}">${{ item.restante }}</td>
+                    <td class="es-progress-cell">
+                        <div class="es-row es-gap-sm">
+                            <div class="es-progress es-flex-1">
+                                <div class="es-progress__bar {% if item.estado == 'Tope Máximo' %}es-progress__bar--danger{% elif item.estado == 'Crítico' %}es-progress__bar--warning{% endif %}" style="width:{% if item.porcentaje > 100 %}100{% else %}{{ item.porcentaje|unlocalize }}{% endif %}%"></div>
+                            </div>
+                            <span class="es-help es-numeric es-nowrap">{{ item.porcentaje }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        {% if item.estado == 'Tope Máximo' %}
+                            <span class="es-badge es-badge--danger es-badge--dot">Tope máximo</span>
+                        {% elif item.estado == 'Crítico' %}
+                            <span class="es-badge es-badge--warning es-badge--dot">Crítico</span>
+                        {% else %}
+                            <span class="es-badge es-badge--success es-badge--dot">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="es-card">
+    <div class="es-empty">
+        <div class="es-empty__icon"><i class="bi bi-pie-chart"></i></div>
+        <div><strong>Sin presupuestos para este periodo</strong></div>
+        <div class="es-fs-sm">Aún no has asignado presupuestos para {{ mes }}/{{ anio }}.</div>
+        <a href="{% url 'budget_create' %}" class="es-btn es-btn--primary es-mt-3"><i class="bi bi-plus-circle"></i> Crear presupuesto</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

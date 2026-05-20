@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial — EcoSmart{% endblock %}
+{% block page_title %}Historial de transacciones{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Movimientos</span>
+        <h2 class="es-page-head__title">Tu actividad financiera</h2>
+        <p class="es-page-head__sub">Ingresos y gastos en un solo lugar. Filtra por tipo, categoría o rango de fechas.</p>
+    </div>
+    <div class="es-page-head__actions">
+        <span class="es-badge es-badge--primary">{{ transacciones|length }} {% if transacciones|length == 1 %}transacción{% else %}transacciones{% endif %}</span>
+    </div>
+</div>
+
+<div class="es-card es-mb-4">
+    <div class="es-card__head">
+        <div class="es-card__title"><i class="bi bi-funnel"></i> Filtros</div>
+    </div>
+    <form method="GET" action="" class="es-form-row">
+        <div class="es-field">
+            <label class="es-label">Tipo</label>
+            <select name="tipo" class="es-select">
+                <option value="">Todos</option>
+                <option value="ingreso" {% if filtro_tipo == 'ingreso' %}selected{% endif %}>Ingresos</option>
+                <option value="gasto"   {% if filtro_tipo == 'gasto' %}selected{% endif %}>Gastos</option>
+            </select>
+        </div>
+
+        <div class="es-field">
+            <label class="es-label">Categoría</label>
+            <select name="categoria" class="es-select">
+                <option value="">Todas</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.id }}" {% if filtro_categoria == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="es-field">
+            <label class="es-label">Desde</label>
+            <input type="date" name="desde" class="es-input" value="{{ filtro_desde }}">
+        </div>
+
+        <div class="es-field">
+            <label class="es-label">Hasta</label>
+            <input type="date" name="hasta" class="es-input" value="{{ filtro_hasta }}">
+        </div>
+
+        <div class="es-field es-row--end">
+            <label class="es-label">&nbsp;</label>
+            <div class="es-row es-gap-xs">
+                <button type="submit" class="es-btn es-btn--primary"><i class="bi bi-funnel"></i> Filtrar</button>
+                <a href="{% url 'transaction_history' %}" class="es-btn es-btn--ghost"><i class="bi bi-x-lg"></i> Limpiar</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="es-stack es-stack--sm">
+    {% for tx in transacciones %}
+    <div class="es-list-item">
+        <span class="es-list-item__icon es-list-item__icon--{% if tx.tipo == 'ingreso' %}income{% else %}expense{% endif %}">
+            {% if tx.tipo == 'ingreso' %}<i class="bi bi-arrow-down-left"></i>{% else %}<i class="bi bi-arrow-up-right"></i>{% endif %}
+        </span>
+        <div class="es-list-item__body">
+            <div class="es-list-item__title">{{ tx.descripcion }}</div>
+            <div class="es-list-item__meta">
+                <i class="bi bi-calendar3"></i> {{ tx.fecha }}
+                {% if tx.categoria %} &nbsp;·&nbsp; <span class="es-badge">{{ tx.categoria }}</span>{% endif %}
+            </div>
+        </div>
+        <div class="es-list-item__amount es-list-item__amount--{% if tx.tipo == 'ingreso' %}income{% else %}expense{% endif %}">
+            {% if tx.tipo == 'ingreso' %}+{% else %}−{% endif %}${{ tx.monto }}
+        </div>
+    </div>
+    {% empty %}
+    <div class="es-card">
+        <div class="es-empty">
+            <div class="es-empty__icon"><i class="bi bi-inbox"></i></div>
+            <div><strong>Sin resultados</strong></div>
+            <div class="es-fs-sm">No hay transacciones que coincidan con los filtros aplicados.</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

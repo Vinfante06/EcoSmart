@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear presupuesto — EcoSmart{% endblock %}
+{% block page_title %}Crear presupuesto{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Presupuesto</span>
+        <h2 class="es-page-head__title">Define límites por categoría</h2>
+        <p class="es-page-head__sub">Asigna un tope mensual a cada categoría y mantén tus gastos bajo control.</p>
+    </div>
+    <div class="es-page-head__actions">
+        <a href="{% url 'remaining_budget' %}" class="es-btn es-btn--soft-primary"><i class="bi bi-graph-up"></i> Ver restante</a>
+    </div>
+</div>
+
+<div class="es-grid es-grid--one-third es-mb-4">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-pie-chart es-text-primary"></i> Nuevo presupuesto</div>
+        </div>
+        <form action="" method="POST" class="es-stack">
+            {% csrf_token %}
+
+            <div class="es-field">
+                <label class="es-label" for="categoria">Categoría</label>
+                <select name="categoria" id="categoria" class="es-select" required>
+                    <option value="" disabled selected>Selecciona una categoría</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="es-form-row">
+                <div class="es-field">
+                    <label class="es-label" for="monto_limite">Monto límite</label>
+                    <div class="es-input-group">
+                        <span class="es-input-group__addon">$</span>
+                        <input type="number" name="monto_limite" id="monto_limite" class="es-input" step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+                </div>
+
+                <div class="es-field">
+                    <label class="es-label" for="mes">Mes</label>
+                    <input type="number" name="mes" id="mes" class="es-input" min="1" max="12" placeholder="1 - 12" required>
+                </div>
+
+                <div class="es-field">
+                    <label class="es-label" for="anio">Año</label>
+                    <input type="number" name="anio" id="anio" class="es-input" min="2000" max="2100" placeholder="2026" required>
+                </div>
+            </div>
+
+            <button type="submit" class="es-btn es-btn--primary es-btn--lg es-btn--block">
+                <i class="bi bi-check-circle"></i> Guardar presupuesto
+            </button>
+        </form>
+    </div>
+
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-list-check"></i> Presupuestos creados</div>
+            <span class="es-badge">{{ presupuestos|length }}</span>
+        </div>
+
+        {% if presupuestos %}
+        <div class="es-stack es-stack--sm">
+            {% for p in presupuestos %}
+            <div class="es-list-item">
+                <span class="es-list-item__icon"><i class="bi bi-tag"></i></span>
+                <div class="es-list-item__body">
+                    <div class="es-list-item__title">{{ p.categoria }}</div>
+                    <div class="es-list-item__meta"><i class="bi bi-calendar3"></i> Periodo {{ p.mes }}/{{ p.anio }}</div>
+                </div>
+                <div class="es-list-item__amount es-text-primary">${{ p.monto_limite }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="es-empty">
+            <div class="es-empty__icon"><i class="bi bi-inbox"></i></div>
+            <div><strong>Sin presupuestos creados</strong></div>
+            <div class="es-fs-sm">Comienza definiendo límites por categoría.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
