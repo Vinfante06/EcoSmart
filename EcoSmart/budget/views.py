@@ -8,6 +8,7 @@ from django.urls import reverse
 from . import servicios
 from .formularios import (
     AbonoAhorroForm,
+    AlertaForm,
     CategoriaForm,
     FiltroHistorialForm,
     GastoForm,
@@ -15,7 +16,7 @@ from .formularios import (
     ObjetivoAhorroForm,
     PresupuestoForm,
 )
-from .models import Categoria, Gasto, Ingreso, Presupuesto
+from .models import AlertaPersonalizada, Categoria, Gasto, Ingreso, Presupuesto
 from .reportes import generar_reporte_excel, generar_reporte_pdf
 
 
@@ -325,6 +326,40 @@ def copiar_presupuesto_mes(request):
     else:
         messages.warning(request, "No se encontraron presupuestos nuevos para copiar del mes anterior.")
     return redirect(f"{reverse('budget_create')}?mes={mes}&anio={anio}")
+
+
+@login_required
+def configure_alerts(request):
+    if request.method == "POST":
+        if request.POST.get("action") == "delete":
+            alerta_id = request.POST.get("alerta_id")
+            AlertaPersonalizada.objects.filter(id=alerta_id, usuario=request.user).delete()
+            messages.success(request, "Alerta eliminada correctamente.")
+            return redirect("configure_alerts")
+
+        categoria_id = request.POST.get("categoria")
+        instancia = AlertaPersonalizada.objects.filter(
+            usuario=request.user, categoria_id=categoria_id
+        ).first()
+        formulario = AlertaForm(request.POST, instance=instancia, usuario=request.user)
+        if formulario.is_valid():
+            formulario.save()
+            messages.success(request, "Alerta guardada correctamente.")
+            return redirect("configure_alerts")
+        _avisar_errores_formulario(request, formulario)
+    else:
+        formulario = AlertaForm(usuario=request.user)
+
+    alertas = (
+        AlertaPersonalizada.objects.filter(usuario=request.user)
+        .select_related("categoria")
+        .order_by("categoria__nombre")
+    )
+    return render(
+        request,
+        "budget/configure_alerts.html",
+        {"form": formulario, "alertas": alertas},
+    )
 
 
 @login_required

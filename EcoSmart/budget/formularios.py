@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Categoria, Gasto, Ingreso, ObjetivoAhorro, Presupuesto
+from .models import AlertaPersonalizada, Categoria, Gasto, Ingreso, ObjetivoAhorro, Presupuesto
 
 
 class FormularioConUsuarioMixin:
@@ -279,3 +279,66 @@ class FiltroHistorialForm(FormularioConUsuarioMixin, forms.Form):
 class PeriodoReporteForm(forms.Form):
     mes = forms.IntegerField(min_value=1, max_value=12, required=False)
     anio = forms.IntegerField(min_value=2000, max_value=2100, required=False)
+
+
+class AlertaForm(FormularioConUsuarioMixin, forms.ModelForm):
+    categoria = forms.ModelChoiceField(
+        queryset=Categoria.objects.none(),
+        required=True,
+        label="Categoría",
+        empty_label="Selecciona una categoría",
+    )
+
+    class Meta:
+        model = AlertaPersonalizada
+        fields = ["categoria", "umbral_advertencia", "umbral_critico"]
+        labels = {
+            "umbral_advertencia": "Umbral de advertencia (%)",
+            "umbral_critico": "Umbral crítico (%)",
+        }
+        error_messages = {
+            "categoria": {"required": "Debes seleccionar una categoría."},
+            "umbral_advertencia": {
+                "required": "Debes escribir el porcentaje de advertencia.",
+                "invalid": "El porcentaje de advertencia no es válido.",
+            },
+            "umbral_critico": {
+                "required": "Debes escribir el porcentaje crítico.",
+                "invalid": "El porcentaje crítico no es válido.",
+            },
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["categoria"].queryset = Categoria.objects.filter(
+            usuario=self.usuario
+        ).order_by("nombre")
+
+    def clean_umbral_advertencia(self):
+        valor = self.cleaned_data["umbral_advertencia"]
+        if valor < 1 or valor > 99:
+            raise forms.ValidationError("El umbral de advertencia debe estar entre 1 y 99.")
+        return valor
+
+    def clean_umbral_critico(self):
+        valor = self.cleaned_data["umbral_critico"]
+        if valor < 1 or valor > 100:
+            raise forms.ValidationError("El umbral crítico debe estar entre 1 y 100.")
+        return valor
+
+    def clean(self):
+        cleaned_data = super().clean()
+        advertencia = cleaned_data.get("umbral_advertencia")
+        critico = cleaned_data.get("umbral_critico")
+        if advertencia and critico and advertencia >= critico:
+            raise forms.ValidationError(
+                "El umbral de advertencia debe ser menor que el umbral crítico."
+            )
+        return cleaned_data
+
+    def save(self, commit=True):
+        alerta = super().save(commit=False)
+        alerta.usuario = self.usuario
+        if commit:
+            alerta.save()
+        return alerta

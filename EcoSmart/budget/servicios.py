@@ -6,7 +6,7 @@ from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
-from .models import Categoria, Gasto, Ingreso, ObjetivoAhorro, Presupuesto
+from .models import AlertaPersonalizada, Categoria, Gasto, Ingreso, ObjetivoAhorro, Presupuesto
 
 
 CERO = Decimal("0")
@@ -317,14 +317,20 @@ def evaluar_alerta_presupuesto(usuario, categoria):
         f'Límite: ${convertir_a_float(presupuesto.monto_limite):.2f}'
     )
 
-    if porcentaje >= 100:
+    alerta_config = AlertaPersonalizada.objects.filter(
+        usuario=usuario, categoria=categoria
+    ).first()
+    umbral_advertencia = alerta_config.umbral_advertencia if alerta_config else 80
+    umbral_critico = alerta_config.umbral_critico if alerta_config else 100
+
+    if porcentaje >= umbral_critico:
         return {
             "nivel": "error",
             "mensaje": (
                 f'Has superado el presupuesto de "{categoria.nombre}". {mensaje_base}'
             ),
         }
-    if porcentaje >= 80:
+    if porcentaje >= umbral_advertencia:
         return {
             "nivel": "warning",
             "mensaje": (
@@ -554,6 +560,7 @@ def obtener_objetivos_con_progreso(usuario):
             }
         )
     return objetivos
+
 
 
 def obtener_datos_reporte_mensual(usuario, mes, anio):

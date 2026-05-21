@@ -76,6 +76,10 @@
                     <i class="bi bi-bullseye"></i>
                     <span class="es-sidebar__item-label">Ahorro</span>
                 </a>
+                <a class="es-sidebar__item {% if request.resolver_match.url_name == 'configure_alerts' %}is-active{% endif %}" href="{% url 'configure_alerts' %}">
+                    <i class="bi bi-bell"></i>
+                    <span class="es-sidebar__item-label">Alertas</span>
+                </a>
             </div>
 
             <div class="es-sidebar__group">

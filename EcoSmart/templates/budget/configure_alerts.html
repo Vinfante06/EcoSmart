@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurar alertas — EcoSmart{% endblock %}
+{% block page_title %}Configurar alertas{% endblock %}
+
+{% block content %}
+<div class="es-page-head">
+    <div class="es-page-head__text">
+        <span class="es-eyebrow">Presupuesto</span>
+        <h2 class="es-page-head__title">Umbrales de alerta por categoría</h2>
+        <p class="es-page-head__sub">Define a qué porcentaje del presupuesto quieres recibir advertencia y cuándo se considera crítico.</p>
+    </div>
+</div>
+
+<div class="es-grid es-grid--one-third es-mb-4">
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-bell es-text-primary"></i> Nueva alerta</div>
+        </div>
+        <form action="" method="POST" class="es-stack">
+            {% csrf_token %}
+
+            <div class="es-field">
+                <label class="es-label" for="categoria">Categoría</label>
+                <select name="categoria" id="categoria" class="es-select" required>
+                    <option value="" disabled selected>Selecciona una categoría</option>
+                    {% for cat in form.fields.categoria.queryset %}
+                    <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="es-form-row">
+                <div class="es-field">
+                    <label class="es-label" for="umbral_advertencia">Advertencia (%)</label>
+                    <div class="es-input-group">
+                        <input type="number" name="umbral_advertencia" id="umbral_advertencia"
+                               class="es-input" min="1" max="99" value="80" required>
+                        <span class="es-input-group__addon">%</span>
+                    </div>
+                    <span class="es-field__hint">Rango: 1 – 99</span>
+                </div>
+
+                <div class="es-field">
+                    <label class="es-label" for="umbral_critico">Crítico (%)</label>
+                    <div class="es-input-group">
+                        <input type="number" name="umbral_critico" id="umbral_critico"
+                               class="es-input" min="1" max="100" value="100" required>
+                        <span class="es-input-group__addon">%</span>
+                    </div>
+                    <span class="es-field__hint">Rango: 1 – 100</span>
+                </div>
+            </div>
+
+            <button type="submit" class="es-btn es-btn--primary es-btn--lg es-btn--block">
+                <i class="bi bi-check-circle"></i> Guardar alerta
+            </button>
+        </form>
+    </div>
+
+    <div class="es-card">
+        <div class="es-card__head">
+            <div class="es-card__title"><i class="bi bi-list-check"></i> Alertas configuradas</div>
+            <span class="es-badge">{{ alertas|length }}</span>
+        </div>
+
+        {% if alertas %}
+        <div class="es-stack es-stack--sm">
+            {% for alerta in alertas %}
+            <div class="es-list-item">
+                <span class="es-list-item__icon"><i class="bi bi-bell-fill"></i></span>
+                <div class="es-list-item__body">
+                    <div class="es-list-item__title">{{ alerta.categoria }}</div>
+                    <div class="es-list-item__meta">
+                        <span class="es-badge es-badge--warning">Aviso: {{ alerta.umbral_advertencia }}%</span>
+                        <span class="es-badge es-badge--danger">Crítico: {{ alerta.umbral_critico }}%</span>
+                    </div>
+                </div>
+                <form method="POST" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="alerta_id" value="{{ alerta.id }}">
+                    <button type="submit" class="es-btn es-btn--ghost es-btn--sm"
+                            title="Eliminar alerta" onclick="return confirm('¿Eliminar esta alerta?')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="es-empty">
+            <div class="es-empty__icon"><i class="bi bi-bell-slash"></i></div>
+            <div><strong>Sin alertas configuradas</strong></div>
+            <div class="es-fs-sm">Se usarán los valores por defecto (advertencia 80%, crítico 100%).</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -53,3 +53,16 @@ class ObjetivoAhorro(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - ${self.monto_objetivo}"
+
+
+class AlertaPersonalizada(models.Model):
+    usuario             = models.ForeignKey(User, on_delete=models.CASCADE)
+    categoria           = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    umbral_advertencia  = models.PositiveIntegerField(default=80)
+    umbral_critico      = models.PositiveIntegerField(default=100)
+
+    class Meta:
+        unique_together = ("usuario", "categoria")
+
+    def __str__(self):
+        return f"{self.categoria} — advertencia {self.umbral_advertencia}% / crítico {self.umbral_critico}%"

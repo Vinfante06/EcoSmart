@@ -29,6 +29,8 @@ urlpatterns = [
     path('categorias/<int:id>/editar/', views.category_edit),
     path('categorias/<int:id>/eliminar/', views.category_delete),
 
+    path('alertas/', views.configure_alerts, name='configure_alerts'),
+
     path('reportes/pdf/', views.export_pdfpage, name='export_pdfpage'),
     path('reportes/pdf/download/', views.export_monthly_pdf, name='export_monthly_pdf'),
     path('reportes/excel/download/', views.export_monthly_excel, name='export_monthly_excel'),
